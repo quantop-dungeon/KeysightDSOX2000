@@ -9,7 +9,7 @@ class ScopeTest(unittest.TestCase):
     def test_get_short_trace(self):
         s = DSOX2024()
         
-        x, y = s.get_trace(1, 100)
+        x, y = s.get_trace(1)
 
         self.assertEquals(x.shape, y.shape)
 

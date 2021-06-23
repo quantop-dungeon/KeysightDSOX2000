@@ -32,100 +32,46 @@ class DSOX2024:
         if not scope_id.startswith("AGILENT TECHNOLOGIES,DSO-X 2024A"):
             raise IOError(f"Incorrect IDN string of device: {scope_id}")
 
-        # Set output format to ascii
-        self.scope.write(':WAV:FORM ascii')
+        # Set output format to signed binary (way faster)
+        self.scope.write(':WAV:FORM BYTE')
+        self.scope.write(':WAV:UNS OFF')
+        self.scope.write(':WAV:points:mode max')
 
-    def _preamb_to_ts(self, preamb):
+
+    def get_trace(self, channel=1):
         """
-        Transform the waveform preamble string to a more
-        human-readable dictionary and construct time axis. 
-        Only via the waveform preamble can scope trace time
-        base information be obtained.
-        """
-        # Clean the input
-        if preamb[-1] == '\n':
-            preamb = preamb[:-1]
-        n = preamb.count(',')+1
-        entries = [[]]*n
-        ind1 = 0
-        ind2 = preamb.find(',')
-        for ii in range(n-1):
-            entries[ii] = preamb[ind1:ind2]
-            ind1 = ind2 + 1
-            ind2 = ind1 + preamb[ind1:].find(',')
-        entries[-1] = preamb[ind1:]
-        # Define what the heck the codes mean (p. 966 of Manual)
-        form = {'+0': 'BYTE', '+1': 'WORD', '+4': 'ASCii'}
-        typ = {'+2': 'AVERage', '+0': 'NORMal', '+1': 'PEAK', '+3': 'HRES'}
-        # Build dictionary
-        dic = {}
-        dic.update({'format': form[entries[0]]})
-        dic.update({'acq. type': typ[entries[1]]})
-        dic.update({'points': int(entries[2])})
-        dic.update({'av. count': int(entries[3])})
-        dic.update({'x inc': float(entries[4])})
-        dic.update({'x origin': float(entries[5])})
-        dic.update({'x origin index': int(entries[6])})
-        dic.update({'y inc': float(entries[7])})
-        dic.update({'y origin': float(entries[8])})
-        dic.update({'y origin index': int(entries[9])})
-        x0 = dic['x origin']
-        x0_n = dic['x origin index']
-        dx = dic['x inc']
-        N = dic['points']
-        return np.linspace(x0-dx*x0_n, x0-dx*x0_n+dx*N, N)
-
-    def _ascii_to_np(self, data):
-        """
-        Convert an ascii data array from the scope to
-        a numpy array.
-        """
-        # Remove weird header
-        if data.find('#') != -1:
-            count = data.find('#') + 1
-            while data[count].isdigit():
-                count += 1
-            data = data[count:]
-        # Remove final newline character
-        if data[-1] == '\n':
-            data = data[:-1]
-
-        # Initialise output array
-        N = data.count(',')
-        npdata = np.zeros(N+1, dtype=np.float64)
-        ind1 = 0
-        ind2 = data.find(',')
-        for ii in range(N):
-            npdata[ii] = float(data[ind1:ind2])
-            ind1 = ind2+1
-            ind2 = data[ind1:].find(',')+ind1
-        npdata[N] = float(data[ind1:])
-
-        return npdata
-
-
-    def get_trace(self, channel=1, points=None):
-        """
-        Get a single trace from channel.
+        Get a single trace from channel. Automatically gets the maximum number
+        of samples
         """
         if channel not in range(1, 4+1):
-            raise ValueError("Incorrect channel setting")
+            raise ValueError("Incorrect channel number")
         
         self.scope.write(":WAV:SOUR CHAN" + str(channel))
-        
-        if points is not None:
-            self.scope.write(":WAV:POIN " + str(int(points)))
 
         # Stop aquisition
         self.scope.write(':STOP')
-        # Get data and preamble
-        data = self.scope.query(":WAVeform:DATA?")
-        preamb = self.scope.query(':WAVeform:PREamble?')
+
+        # Get data, plus x and y scales
+        data = self.scope.query_binary_values(":WAVeform:DATA?", datatype='b')
+
+        x_inc = float(self.scope.query(":wav:xinc?"))
+        x_0 = float(self.scope.query(":wav:xorigin?"))
+
+        y_inc = float(self.scope.query(":wav:yinc?"))
+        y_0 = float(self.scope.query(":wav:yorigin?"))
+
+        # Total number of points, used later to generate the t axis
+        n = len(data)
+
         # Continue aquisition
         self.scope.write(':RUN')
-        # Convert data
-        xdata = self._preamb_to_ts(preamb)
-        ydata = self._ascii_to_np(data)
+
+        # Convert data to NumPy, following the Programming Manual. It states 
+        # that xorigin and yorigin correspond to the first datapoint
+        xdata = x_0 + x_inc * np.arange(n)
+
+        ydata = y_0 + y_inc * (np.array(data) - data[0])
+        
         return xdata, ydata
 
 
