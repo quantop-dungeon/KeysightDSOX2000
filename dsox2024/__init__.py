@@ -2,3 +2,5 @@
 """
 
 __version__ = "0.1"
+
+from dsox2024.dsox2024 import DSOX2024

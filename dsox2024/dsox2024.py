@@ -9,29 +9,33 @@ in the browser interface
 @author: Bones
 
 Information:
-\\quarpi\other\membrane\Equipment\Commercial\Keysight DSOX2024A\
-2000_series_prog_guide.pdf
+
+quarpi.qopt.nbi.dk/other/membrane/Equipment/Commercial/Keysight DSOX2024A/2000_series_prog_guide.pdf
     
 """
 
-import visa
+import pyvisa as visa
 import numpy as np
 from time import sleep
 
 
-class connect:
-    def __init__(self, address=u'TCPIP0::dx2024a::INSTR'):
+class DSOX2024:
+    def __init__(self, address=u'TCPIP0::dx2024a.qopt.nbi.dk::INSTR'):
         """ 
         Connect to scope.
         """
         rm = visa.ResourceManager()
-        self.scope = rm.get_instrument(address)
-        # Ask for response
-        print(self.scope.ask('*IDN?'))
+        self.scope = rm.open_resource(address)
+
+        # Ask for response and validate
+        scope_id = self.scope.query('*IDN?')
+        if not scope_id.startswith("AGILENT TECHNOLOGIES,DSO-X 2024A"):
+            raise IOError(f"Incorrect IDN string of device: {scope_id}")
+
         # Set output format to ascii
         self.scope.write(':WAV:FORM ascii')
 
-    def get_time(self, preamb):
+    def _preamb_to_ts(self, preamb):
         """
         Transform the waveform preamble string to a more
         human-readable dictionary and construct time axis. 
@@ -71,7 +75,7 @@ class connect:
         N = dic['points']
         return np.linspace(x0-dx*x0_n, x0-dx*x0_n+dx*N, N)
 
-    def read_ascii_data(self,data):
+    def _ascii_to_np(self, data):
         """
         Convert an ascii data array from the scope to
         a numpy array.
@@ -88,7 +92,7 @@ class connect:
 
         # Initialise output array
         N = data.count(',')
-        npdata = np.zeros(N+1)
+        npdata = np.zeros(N+1, dtype=np.float64)
         ind1 = 0
         ind2 = data.find(',')
         for ii in range(N):
@@ -96,6 +100,7 @@ class connect:
             ind1 = ind2+1
             ind2 = data[ind1:].find(',')+ind1
         npdata[N] = float(data[ind1:])
+
         return npdata
 
 
@@ -103,23 +108,28 @@ class connect:
         """
         Get a single trace from channel.
         """
+        if channel not in range(1, 4+1):
+            raise ValueError("Incorrect channel setting")
+        
         self.scope.write(":WAV:SOUR CHAN" + str(channel))
-        if points != None:
+        
+        if points is not None:
             self.scope.write(":WAV:POIN " + str(int(points)))
+
         # Stop aquisition
         self.scope.write(':STOP')
         # Get data and preamble
-        data = self.scope.ask(":WAVeform:DATA?")
-        preamb = self.scope.ask(':WAVeform:PREamble?')
+        data = self.scope.query(":WAVeform:DATA?")
+        preamb = self.scope.query(':WAVeform:PREamble?')
         # Continue aquisition
         self.scope.write(':RUN')
         # Convert data
-        xdata = self.get_time(preamb)
-        ydata = self.read_ascii_data(data)
+        xdata = self._preamb_to_ts(preamb)
+        ydata = self._ascii_to_np(data)
         return xdata, ydata
 
 
-    def changeTimeMode(self, mode='MAIN'):
+    def change_time_mode(self, mode='MAIN'):
         '''
         Can choose between the following options (p. 581 in programming manual)
 
@@ -139,10 +149,11 @@ class connect:
         :TIMebase:REFerence selection changes to RIGHt.
         '''
         if mode not in ['MAIN', 'WINDow', 'XY', 'ROLL']:
-            print('[-] Time mode not recognized. Choose between MAIN, WINDow, XY or ROLL.')
-        else:
-            currMode = self.scope.ask(':TIMebase:MODE?').split('\n')[0]
-            print('[+] Changing from {} to {} mode.'.format(currMode, mode))
+            msg = 'Time mode not recognized. Choose between MAIN, WINDow, XY or ROLL.'
+            raise ValueError(msg)
+        
+        currMode = self.scope.query(':TIMebase:MODE?').split('\n')[0]
+        #print('[+] Changing from {} to {} mode.'.format(currMode, mode))
 
 
     def setTimePerDivision(self, timePerDiv=2.0):
@@ -172,7 +183,7 @@ class connect:
         the oscilloscope averages all data points.
         '''
         channel = int(channel)
-        VAverage = self.scope.ask(':MEAS:VAV? {},CHAN{:d}'.format(interval, channel))
+        VAverage = self.scope.query(':MEAS:VAV? {},CHAN{:d}'.format(interval, channel))
         print('[+] Average voltage of channel {:d} is {:.3f}V'.format(channel, float(VAverage)))
         return float(VAverage)
 
@@ -181,7 +192,7 @@ class connect:
 
 
 if __name__ == '__main__':
-    scope = connect()
+    scope = DSOX2024()
     scope.changeTimeMode(mode='ROLL')
     scope.setTimePerDivision(timePerDiv=10.0)
     sleep(10)
