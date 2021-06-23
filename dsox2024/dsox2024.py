@@ -63,14 +63,13 @@ class DSOX2024:
         # Total number of points, used later to generate the t axis
         n = len(data)
 
-        # Continue aquisition
-        self.scope.write(':RUN')
-
         # Convert data to NumPy, following the Programming Manual. It states 
         # that xorigin and yorigin correspond to the first datapoint
         xdata = x_0 + x_inc * np.arange(n)
+        ydata = y_0 + y_inc * (np.array(data))
 
-        ydata = y_0 + y_inc * (np.array(data) - data[0])
+        # Continue acquisition
+        self.scope.write(':RUN')
         
         return xdata, ydata
 

@@ -11,7 +11,7 @@ class ScopeTest(unittest.TestCase):
         
         x, y = s.get_trace(1)
 
-        self.assertEquals(x.shape, y.shape)
+        self.assertEqual(x.shape, y.shape)
 
 if __name__ == "__main__":
     unittest.main()
