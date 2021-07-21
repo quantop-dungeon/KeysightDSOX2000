@@ -3,4 +3,4 @@
 
 __version__ = "0.1"
 
-from dsox2024.dsox2024 import DSOX2024
+from keysightdsox2000.keysightdsox2000 import DSOX2020

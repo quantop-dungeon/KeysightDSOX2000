@@ -20,7 +20,7 @@ import numpy as np
 from time import sleep
 
 
-class DSOX2024:
+class DSOX2020:
     def __init__(self, address="TCPIP0::dx2024a.qopt.nbi.dk::INSTR"):
         """Connect to scope."""
         rm = visa.ResourceManager()
@@ -146,7 +146,7 @@ class DSOX2024:
 
 
 if __name__ == "__main__":
-    scope = DSOX2024()
+    scope = DSOX2020()
     scope.changeTimeMode(mode="ROLL")
     scope.setTimePerDivision(timePerDiv=10.0)
     sleep(10)

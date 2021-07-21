@@ -1,14 +1,14 @@
 import unittest
 
-from dsox2024 import DSOX2024
+from keysightdsox2000 import DSOX2020
 
 
 class ScopeTest(unittest.TestCase):
     def test_init(self):
-        DSOX2024()
+        DSOX2020()
 
     def test_get_short_trace(self):
-        s = DSOX2024()
+        s = DSOX2020()
 
         x, y = s.get_trace(1)
 
