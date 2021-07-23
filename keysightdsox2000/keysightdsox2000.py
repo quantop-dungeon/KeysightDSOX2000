@@ -1,18 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-REMOTE CONTROL OF THE KEYSIGHT INFIIVISION DSOX2024A Scope
-Version 1.0 (2017/03/02)
+REMOTE CONTROL OF THE KEYSIGHT INFIIVISION DSOX2000 Scope
 
 Connection via LAN, Find VISA TCP/IP Connect String
 in the browser interface
-
-@author: Bones
-
-Information:
-
-quarpi.qopt.nbi.dk/other/membrane/Equipment/Commercial/
-Keysight DSOX2024A/2000_series_prog_guide.pdf
-
 """
 
 import pyvisa as visa
@@ -20,7 +11,7 @@ import numpy as np
 from time import sleep
 
 
-class DSOX2020:
+class DSOX2000:
     def __init__(self, address="TCPIP0::dx2024a.qopt.nbi.dk::INSTR"):
         """Connect to scope."""
         rm = visa.ResourceManager()
@@ -146,7 +137,7 @@ class DSOX2020:
 
 
 if __name__ == "__main__":
-    scope = DSOX2020()
+    scope = DSOX2000()
     scope.changeTimeMode(mode="ROLL")
     scope.setTimePerDivision(timePerDiv=10.0)
     sleep(10)

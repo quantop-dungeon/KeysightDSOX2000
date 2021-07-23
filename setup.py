@@ -28,7 +28,7 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name="keysightdsox2020",  # Required
+    name="keysightdsox2000",  # Required
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
     #
@@ -40,7 +40,7 @@ setup(
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
     # Optional
-    description="Python interface to the Keysight DSO-X 2020 scopes",
+    description="Python interface to the Keysight DSO-X 2000 scopes",
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
     #
