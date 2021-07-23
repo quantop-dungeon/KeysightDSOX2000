@@ -17,6 +17,9 @@ class DSOX2000:
         rm = visa.ResourceManager()
         self.scope = rm.open_resource(address)
 
+        self.scope.read_termination = '\n'
+        self.scope.write_termination = '\n'
+
         # Ask for response and validate
         scope_id = self.scope.query("*IDN?")
         if not scope_id.startswith("AGILENT TECHNOLOGIES,DSO-X 2024A"):
@@ -87,9 +90,6 @@ class DSOX2000:
                 " MAIN, WINDow, XY or ROLL."
             )
             raise ValueError(msg)
-
-        # currMode = self.scope.query(":TIMebase:MODE?").split("\n")[0]
-        # print('[+] Changing from {} to {} mode.'.format(currMode, mode))
 
     def setTimePerDivision(self, timePerDiv=2.0):
         """
