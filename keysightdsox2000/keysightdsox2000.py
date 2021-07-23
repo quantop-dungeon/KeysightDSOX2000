@@ -1,15 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-REMOTE CONTROL OF THE KEYSIGHT INFIIVISION DSOX2000 Scope
-
-Connection via LAN, Find VISA TCP/IP Connect String
-in the browser interface
-"""
 
 import pyvisa as visa
 import numpy as np
-from time import sleep
-
 
 class DSOX2000:
     def __init__(self, address="TCPIP0::dx2024a.qopt.nbi.dk::INSTR"):
@@ -131,32 +123,3 @@ class DSOX2000:
             )
         )
         return float(VAverage)
-
-    def close(self):
-        self.scope.close()
-
-
-if __name__ == "__main__":
-    scope = DSOX2000()
-    scope.changeTimeMode(mode="ROLL")
-    scope.setTimePerDivision(timePerDiv=10.0)
-    sleep(10)
-    scope.measureAverageVoltage(channel=1)
-    scope.close()
-#    scope.changeTimeMode(mode='ROLL')
-#    scope.setTimePerDivision(timePerDiv=2.0)
-#    sleep(2)
-#    xdata, ydata = scope.get_trace(channel=1, points=100)
-#
-#    scope.setTimePerDivision(timePerDiv=0.1)
-#    scope.changeTimeMode(mode='MAIN')
-#
-#    scope.close()
-#
-#    import pylab as plt
-#    plt.figure(figsize=(10, 7))
-#    plt.plot(xdata, ydata)
-#    plt.xlabel('Time (s)')
-#    plt.ylabel('Voltage (V)')
-#    plt.minorticks_on()
-#    plt.tight_layout()
