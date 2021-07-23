@@ -75,11 +75,11 @@ class DSOX2000:
 
         return (xdata, ydata, mdt)
 
-    def set_time_per_div(self, timePerDiv=2.0):
+    def set_time_per_div(self, t):
         """
         Set horizontal time scale per division in seconds.
         """
-        timescale = float(timePerDiv)
+        timescale = float(t)
         print(
             "[+] Changing to {:.1f}s per division time scale.".format(
                 timescale
@@ -87,31 +87,30 @@ class DSOX2000:
         )
         self.comm.write(":TIMebase:SCALe {:.5f}".format(timescale))
 
-    def set_total_time(self, totalTimescale=2.0):
+    def set_total_time(self, t):
+        """Sets horizontal time in seconds (total time).
         """
-        Set horizontal time in seconds (total time).
-        """
-        timescale = float(totalTimescale)
+        timescale = float(t)
         print(
             "[+] Changing to a total time scale of {:.1f}s .".format(timescale)
         )
         self.comm.write(":TIMebase:RANGe {:.5f}".format(timescale))
 
-    def meas_avg_volt(self, channel=1, interval="DISPlay"):
-        """
-        Returns average voltage of a given channel in volts.
-        See p. 370 in programming manual:
+    def meas_avg_voltage(self, channel=1, interval="DISPlay"):
+        """Reads the average voltage of a given channel in volts.
+        
+        See p. 370 in programming manual for more details:
         The :MEASure:VAVerage? query returns the average value of an integral
         number of periods of the signal. If at least three edges are not
         present, the oscilloscope averages all data points.
         """
         channel = int(channel)
-        VAverage = self.comm.query(
+        v_avg = self.comm.query(
             ":MEAS:VAV? {},CHAN{:d}".format(interval, channel)
         )
         print(
             "[+] Average voltage of channel {:d} is {:.3f}V".format(
-                channel, float(VAverage)
+                channel, float(v_avg)
             )
         )
-        return float(VAverage)
+        return float(v_avg)
