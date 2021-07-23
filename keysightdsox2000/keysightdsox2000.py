@@ -8,7 +8,7 @@ from numpy import ndarray
 
 
 class DSOX2000:
-    """Class for communication with DSO-X 2000-series scopes.
+    """A class for communication with DSO-X 2000-series scopes.
 
     Attributes:
         comm: A communication resource.
@@ -23,12 +23,12 @@ class DSOX2000:
         rm = visa.ResourceManager()
         self.comm = rm.open_resource(address)
 
-        self.comm.read_termination = '\n'
-        self.comm.write_termination = '\n'
+        self.comm.read_termination = "\n"
+        self.comm.write_termination = "\n"
 
         # Asks for an identifier and validates it.
         id = self.comm.query("*IDN?")
-        if not id.startswith("AGILENT TECHNOLOGIES,DSO-X 2024A"):
+        if not "dso-x 20" in id.lower():
             raise IOError(f"Incorrect IDN string of device: {id}")
 
         # Sets the waveform output format to signed binary.
@@ -49,9 +49,6 @@ class DSOX2000:
         """
 
         self.comm.write(":WAV:SOUR CHAN" + str(channel))
-
-        # Stop aquisition
-        self.comm.write(":STOP")
 
         # Get data, plus x and y scales
         data = self.comm.query_binary_values(":WAVeform:DATA?", datatype="b")
@@ -74,6 +71,22 @@ class DSOX2000:
         self.comm.write(":RUN")
 
         return (xdata, ydata, mdt)
+
+    def aquire_single(self):
+        """Initiates the aquisition of a single trace (same as pressing 
+        the SINGLE button).
+        """
+        self.comm.write(':SINGle')
+
+    def acquire_continuous(self):
+        """Initiates continuous data acquitions (same as pressing 
+        the RUN button).
+        """
+        self.comm.write(':RUN')
+
+    def stop_acquisition(self):
+        """Stops data aquisition (same as pressing the STOP button)."""
+        self.comm.write(":STOP")
 
     def set_time_per_div(self, t):
         """
