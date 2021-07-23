@@ -83,7 +83,7 @@ class DSOX2000:
             )
             raise ValueError(msg)
 
-    def setTimePerDivision(self, timePerDiv=2.0):
+    def set_time_per_div(self, timePerDiv=2.0):
         """
         Set horizontal time scale per division in seconds.
         """
@@ -95,7 +95,7 @@ class DSOX2000:
         )
         self.scope.write(":TIMebase:SCALe {:.5f}".format(timescale))
 
-    def setTotalTime(self, totalTimescale=2.0):
+    def set_total_time(self, totalTimescale=2.0):
         """
         Set horizontal time in seconds (total time).
         """
@@ -105,7 +105,7 @@ class DSOX2000:
         )
         self.scope.write(":TIMebase:RANGe {:.5f}".format(timescale))
 
-    def measureAverageVoltage(self, channel=1, interval="DISPlay"):
+    def meas_avg_volt(self, channel=1, interval="DISPlay"):
         """
         Returns average voltage of a given channel in volts.
         See p. 370 in programming manual:
