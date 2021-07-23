@@ -75,33 +75,6 @@ class DSOX2000:
 
         return (xdata, ydata, mdt)
 
-    def change_time_mode(self, mode="MAIN"):
-        """
-        Can choose between the following options (p. 581 in programming manual)
-
-        MAIN — The normal time base mode is the main time base. It is the
-        default time base mode after the *RST (Reset) command.
-
-        WINDow — In the WINDow (zoomed or delayed) time base mode,
-        measurements are made in the zoomed time base if possible; otherwise,
-        the measurements are made in the main time base.
-
-        XY — In the XY mode, the :TIMebase:RANGe, :TIMebase:POSition, and
-        :TIMebase:REFerence commands are not available. No measurements are
-        available in this mode.
-
-        ROLL — In the ROLL mode, data moves continuously across the display
-        from left to right. The oscilloscope runs continuously and is
-        untriggered.
-        The :TIMebase:REFerence selection changes to RIGHt.
-        """
-        if mode not in ["MAIN", "WINDow", "XY", "ROLL"]:
-            msg = (
-                "Time mode not recognized. Choose between"
-                " MAIN, WINDow, XY or ROLL."
-            )
-            raise ValueError(msg)
-
     def set_time_per_div(self, timePerDiv=2.0):
         """
         Set horizontal time scale per division in seconds.
