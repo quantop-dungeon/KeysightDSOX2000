@@ -3,47 +3,66 @@
 import pyvisa as visa
 import numpy as np
 
+from typing import Union, Tuple
+from numpy import ndarray
+
+
 class DSOX2000:
-    def __init__(self, address="TCPIP0::dx2024a.qopt.nbi.dk::INSTR"):
-        """Connect to scope."""
+    """Class for communication with DSO-X 2000-series scopes.
+
+    Attributes:
+        comm: A communication resource.
+
+    Args:
+        address: Visa resource name.
+    """
+    comm = None
+
+    def __init__(self, address: str = "TCPIP0::dx2024a.qopt.nbi.dk::INSTR"):
+        # Connects to the device.
         rm = visa.ResourceManager()
-        self.scope = rm.open_resource(address)
+        self.comm = rm.open_resource(address)
 
-        self.scope.read_termination = '\n'
-        self.scope.write_termination = '\n'
+        self.comm.read_termination = '\n'
+        self.comm.write_termination = '\n'
 
-        # Ask for response and validate
-        scope_id = self.scope.query("*IDN?")
-        if not scope_id.startswith("AGILENT TECHNOLOGIES,DSO-X 2024A"):
-            raise IOError(f"Incorrect IDN string of device: {scope_id}")
+        # Asks for an identifier and validates it.
+        id = self.comm.query("*IDN?")
+        if not id.startswith("AGILENT TECHNOLOGIES,DSO-X 2024A"):
+            raise IOError(f"Incorrect IDN string of device: {id}")
 
-        # Set output format to signed binary (way faster)
-        self.scope.write(":WAV:FORM BYTE")
-        self.scope.write(":WAV:UNS OFF")
-        self.scope.write(":WAV:points:mode max")
+        # Sets the waveform output format to signed binary.
+        self.comm.write(":WAV:FORM BYTE")
+        self.comm.write(":WAV:UNS OFF")
+        self.comm.write(":WAV:points:mode max")
 
-    def get_trace(self, channel=1):
-        """Get a single trace from channel. Automatically gets the maximum number
-        of samples
+    def get_trace(self, channel: Union[int, str] = 1) -> Tuple[ndarray, ndarray,
+                                                               dict]:
+        """Reads a single trace from a scope channel. Requests the maximum
+        number of samples.
+
+        Args:
+            channel: Channel name or number.
+
+        Returns:
+            A tuple (x, y, mdt).
         """
-        if channel not in range(1, 4 + 1):
-            raise ValueError("Incorrect channel number")
 
-        self.scope.write(":WAV:SOUR CHAN" + str(channel))
+        self.comm.write(":WAV:SOUR CHAN" + str(channel))
 
         # Stop aquisition
-        self.scope.write(":STOP")
+        self.comm.write(":STOP")
 
         # Get data, plus x and y scales
-        data = self.scope.query_binary_values(":WAVeform:DATA?", datatype="b")
+        data = self.comm.query_binary_values(":WAVeform:DATA?", datatype="b")
 
-        x_inc = float(self.scope.query(":wav:xinc?"))
-        x_0 = float(self.scope.query(":wav:xorigin?"))
+        x_inc = float(self.comm.query(":wav:xinc?"))
+        x_0 = float(self.comm.query(":wav:xorigin?"))
 
-        y_inc = float(self.scope.query(":wav:yinc?"))
-        y_0 = float(self.scope.query(":wav:yorigin?"))
+        y_inc = float(self.comm.query(":wav:yinc?"))
+        y_0 = float(self.comm.query(":wav:yorigin?"))
 
-        # Total number of points, used later to generate the t axis
+        # Total number of points, used later to generate the x axis.
         n = len(data)
 
         # Convert data to NumPy, following the Programming Manual. It states
@@ -52,9 +71,9 @@ class DSOX2000:
         ydata = y_0 + y_inc * (np.array(data))
 
         # Continue acquisition
-        self.scope.write(":RUN")
+        self.comm.write(":RUN")
 
-        return xdata, ydata
+        return (xdata, ydata, mdt)
 
     def change_time_mode(self, mode="MAIN"):
         """
@@ -93,7 +112,7 @@ class DSOX2000:
                 timescale
             )
         )
-        self.scope.write(":TIMebase:SCALe {:.5f}".format(timescale))
+        self.comm.write(":TIMebase:SCALe {:.5f}".format(timescale))
 
     def set_total_time(self, totalTimescale=2.0):
         """
@@ -103,7 +122,7 @@ class DSOX2000:
         print(
             "[+] Changing to a total time scale of {:.1f}s .".format(timescale)
         )
-        self.scope.write(":TIMebase:RANGe {:.5f}".format(timescale))
+        self.comm.write(":TIMebase:RANGe {:.5f}".format(timescale))
 
     def meas_avg_volt(self, channel=1, interval="DISPlay"):
         """
@@ -114,7 +133,7 @@ class DSOX2000:
         present, the oscilloscope averages all data points.
         """
         channel = int(channel)
-        VAverage = self.scope.query(
+        VAverage = self.comm.query(
             ":MEAS:VAV? {},CHAN{:d}".format(interval, channel)
         )
         print(
