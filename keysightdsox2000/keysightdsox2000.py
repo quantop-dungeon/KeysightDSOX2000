@@ -119,7 +119,7 @@ class DSOX2000:
         """Stops data aquisition (same as pressing the STOP button)."""
         self.comm.write(":STOP")
 
-    def set_time_per_div(self, t: Union[float, str]):
+    def set_time_per_division(self, t: Union[float, str]):
         """Set horizontal time scale per division in seconds."""
         self.comm.write(f":TIMebase:SCALe {t}")
 
@@ -127,8 +127,8 @@ class DSOX2000:
         """Sets horizontal time in seconds (total time)."""
         self.comm.write(f":TIMebase:RANGe {t}")
 
-    def meas_average_voltage(self, channel: Union[int, str] = 1,
-                             interval="display") -> float:
+    def measure_average_voltage(self, channel: Union[int, str] = 1,
+                                interval="display") -> float:
         """Reads the average voltage of a given channel in volts.
 
         See p. 370 in programming manual for more details:
