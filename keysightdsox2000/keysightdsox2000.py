@@ -1,8 +1,7 @@
 import pyvisa
 import numpy as np
 
-from typing import Union, Tuple
-from numpy import ndarray
+from typing import Union
 
 
 class DSOX2000:
@@ -26,8 +25,8 @@ class DSOX2000:
     """
     comm = None
 
-    def __init__(self, address: str = "TCPIP0::dx2024a.qopt.nbi.dk::INSTR", 
-                 read_termination: str = "\n", 
+    def __init__(self, address: str = "TCPIP0::dx2024a.qopt.nbi.dk::INSTR",
+                 read_termination: str = "\n",
                  write_termination: str = "\n",
                  **rsc_kwargs):
 
@@ -43,9 +42,9 @@ class DSOX2000:
         if not "dso-x 20" in id.lower():
             raise IOError(f"The device returns an wrong IDN string: {id}")
 
-        # Sets the waveform output format to: signed binary, 
+        # Sets the waveform output format to: signed binary,
         # two bytes per data point, most significan bit byte first,
-        # always return the maximum number of points in the trace.
+        # always request the maximum number of points in the trace.
         self.comm.write(":WAVeform:FORMat WORD;"
                         ":WAVeform:UNSigned OFF;"
                         ":WAVeform:BYTeorder MSBFirst;"
@@ -62,7 +61,8 @@ class DSOX2000:
                 ('chan<n>', 'func', 'math', 'wmem').  
 
         Returns:
-            A dictionary with the keys 'x' and 'y'.
+            A dictionary with the x and y data (under the keys 'x' and 'y'), 
+            and optionally metadata.
         """
 
         if type(channel) is not str:
@@ -70,23 +70,24 @@ class DSOX2000:
 
         d = {"x": None, "y": None}  # Output dictionary
 
-        # If the data is read from a regular input channel, adds the axis names 
-        # and the units. Otherwise (e.g. if is the data is FFT from the func 
-        # channel), the x and y values are still read out, but no information 
+        # If the data is read from a regular input channel, adds the axis names
+        # and the units. Otherwise (e.g. if is the data is FFT from the func
+        # channel), the x and y values are still read out, but no information
         # about axes is currently provided.
         if channel.lower().startswith('chan'):
-            d = d.update({"name_x": "Time", 
+            d = d.update({"name_x": "Time",
                           "name_y": "Voltage",
-                          "unit_x": "s", 
+                          "unit_x": "s",
                           "unit_y": "V"})
 
         # Configures the waveform source.
         self.comm.write(f":WAVeform:SOURce {channel}")
 
-        # Reads the y values. The data type is as configured in init: 
+        # Reads the y values. The data type is as configured in init:
         # short (two-byte integer), with the most significan byte first.
-        y_raw = self.comm.query_binary_values(":WAVeform:DATA?", 
-                                              datatype="h", is_big_endian=True,
+        y_raw = self.comm.query_binary_values(":WAVeform:DATA?",
+                                              datatype="h",
+                                              is_big_endian=True,
                                               container=np.ndarrray)
 
         resp = self.comm.query(":WAVeform:XINCrement?;"
@@ -96,7 +97,7 @@ class DSOX2000:
 
         x_inc, x_0, y_inc, y_0 = [float(s) for s in resp.split(sep=';')]
 
-        # Calculates the x axis and scales the y data. 
+        # Calculates the x axis and scales the y data.
         d["x"] = x_0 + x_inc * np.arange(len(y_raw))
         d["y"] = y_0 + y_inc * y_raw
 
@@ -118,25 +119,16 @@ class DSOX2000:
         """Stops data aquisition (same as pressing the STOP button)."""
         self.comm.write(":STOP")
 
-    def set_time_per_div(self, t):
+    def set_time_per_div(self, t: Union[float, str]):
         """Set horizontal time scale per division in seconds."""
-        timescale = float(t)
-        print(
-            "[+] Changing to {:.1f}s per division time scale.".format(
-                timescale
-            )
-        )
-        self.comm.write(":TIMebase:SCALe {:.5f}".format(timescale))
+        self.comm.write(f":TIMebase:SCALe {t}")
 
-    def set_total_time(self, t):
+    def set_total_time(self, t: Union[float, str]):
         """Sets horizontal time in seconds (total time)."""
-        timescale = float(t)
-        print(
-            "[+] Changing to a total time scale of {:.1f}s .".format(timescale)
-        )
-        self.comm.write(":TIMebase:RANGe {:.5f}".format(timescale))
+        self.comm.write(f":TIMebase:RANGe {t}")
 
-    def meas_average_voltage(self, channel=1, interval="DISPlay"):
+    def meas_average_voltage(self, channel: Union[int, str] = 1,
+                             interval="display") -> float:
         """Reads the average voltage of a given channel in volts.
 
         See p. 370 in programming manual for more details:
@@ -144,13 +136,8 @@ class DSOX2000:
         number of periods of the signal. If at least three edges are not
         present, the oscilloscope averages all data points.
         """
-        channel = int(channel)
-        v_avg = self.comm.query(
-            ":MEAS:VAV? {},CHAN{:d}".format(interval, channel)
-        )
-        print(
-            "[+] Average voltage of channel {:d} is {:.3f}V".format(
-                channel, float(v_avg)
-            )
-        )
+        if type(channel) is not str:
+            channel = "CHAN%i" % channel
+
+        v_avg = self.comm.query(f":MEASure:VAVerage? {interval},{channel}")
         return float(v_avg)
