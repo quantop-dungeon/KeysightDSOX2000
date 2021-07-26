@@ -1,17 +1,18 @@
 import unittest
 import matplotlib.pyplot as plt
 
+from time import sleep
+
 from keysightdsox2000 import DSOX2000
 
 
 class InstrTest(unittest.TestCase):
-    def __init__(self, address=''):
-        self.instr_address = address
+    instr_address = 'TCPIP0::a-dx2024a-41999::5025::SOCKET'
 
     def test_init(self):
         s = DSOX2000(self.instr_address)
         id = s.comm.query("*IDN?")
-        print(f"Instrument IDN string: {id}")
+        print(f"Instrument IDN string: {id}\n")
 
     def test_get_trace(self):
         s = DSOX2000(self.instr_address)
@@ -19,11 +20,18 @@ class InstrTest(unittest.TestCase):
         n = 1  # Channel number
 
         s.aquire_single()
+        
+        # The wait interval is needed for the two traces read below to be equal. 
+        sleep(1)
+
         tr = s.get_trace(n)
+        print("Successfully read a trace usng an integer channel number.")
         tr2 = s.get_trace(f"chan{n}")
+        print("Successfully read a trace using a string channel name.")
         s.acquire_continuous()
 
-        self.assertEqual(tr, tr2)
+        self.assertTrue((tr["x"] == tr2["x"]).all())
+        self.assertTrue((tr["y"] == tr2["y"]).all())
         self.assertEqual(tr["x"].shape, tr["y"].shape)
 
         plt.plot(tr["x"], tr["y"])
@@ -36,8 +44,8 @@ class InstrTest(unittest.TestCase):
         n = 1  # Channel number
 
         s.aquire_single()
-        v = s.measure_average_voltage(self, n)
-        v2 = s.measure_average_voltage(self, f"chan{n}")
+        v = s.measure_average_voltage(n)
+        v2 = s.measure_average_voltage(f"chan{n}")
         s.acquire_continuous()
 
         self.assertEqual(v, v2)

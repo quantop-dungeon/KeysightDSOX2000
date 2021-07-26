@@ -75,10 +75,10 @@ class DSOX2000:
         # channel), the x and y values are still read out, but no information
         # about axes is currently provided.
         if channel.lower().startswith('chan'):
-            d = d.update({"name_x": "Time",
-                          "name_y": "Voltage",
-                          "unit_x": "s",
-                          "unit_y": "V"})
+            d.update({"name_x": "Time",
+                      "name_y": "Voltage",
+                      "unit_x": "s",
+                      "unit_y": "V"})
 
         # Configures the waveform source.
         self.comm.write(f":WAVeform:SOURce {channel}")
@@ -88,7 +88,7 @@ class DSOX2000:
         y_raw = self.comm.query_binary_values(":WAVeform:DATA?",
                                               datatype="h",
                                               is_big_endian=True,
-                                              container=np.ndarrray)
+                                              container=np.ndarray)
 
         resp = self.comm.query(":WAVeform:XINCrement?;"
                                ":WAVeform:XORigin?;"
