@@ -43,6 +43,6 @@ To plot the aquired trace using matplotlib, use:
 import matplotlib.pyplot as plt
 
 plt.plot(tr['x'], tr['y'])
-plt.xlabel('%s (%s)' % (tr['name_x'], tr[unit_x]))
-plt.ylabel('%s (%s)' % (tr['name_y'], tr[unit_y]))
+plt.xlabel('%s (%s)' % (tr['name_x'], tr['unit_x']))
+plt.ylabel('%s (%s)' % (tr['name_y'], tr['unit_y']))
 ```
