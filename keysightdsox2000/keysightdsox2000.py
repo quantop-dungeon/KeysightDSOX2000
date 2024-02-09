@@ -75,10 +75,7 @@ class DSOX2000:
         # channel), the x and y values are still read out, but no information
         # about axes is currently provided.
         if channel.lower().startswith('chan'):
-            d.update({"name_x": "Time",
-                      "name_y": "Voltage",
-                      "unit_x": "s",
-                      "unit_y": "V"})
+            d.update({"xlabel": "Time (s)", "ylabel": "Voltage (V)"})
 
         # Configures the waveform source.
         self.comm.write(f":WAVeform:SOURce {channel}")
