@@ -35,8 +35,8 @@ class InstrTest(unittest.TestCase):
         self.assertEqual(tr["x"].shape, tr["y"].shape)
 
         plt.plot(tr["x"], tr["y"])
-        plt.xlabel('%s (%s)' % (tr['name_x'], tr['unit_x']))
-        plt.ylabel('%s (%s)' % (tr['name_y'], tr['unit_y']))
+        plt.xlabel(tr['xlabel'])
+        plt.ylabel(tr['ylabel'])
 
     def test_measure_average_voltage(self):
         s = DSOX2000(self.instr_address)
