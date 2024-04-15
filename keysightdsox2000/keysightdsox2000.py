@@ -72,13 +72,10 @@ class DSOX2000:
 
         # If the data is read from a regular input channel, adds the axis names
         # and the units. Otherwise (e.g. if is the data is FFT from the func
-        # channel), the x and y values are still read out, but no information
-        # about axes is currently provided.
+        # channel), the x and y values are still read out, but currently no
+        # information about the axes labels is added.
         if channel.lower().startswith('chan'):
-            d.update({"name_x": "Time",
-                      "name_y": "Voltage",
-                      "unit_x": "s",
-                      "unit_y": "V"})
+            d.update({"xlabel": "Time (s)", "ylabel": "Voltage (V)"})
 
         # Configures the waveform source.
         self.comm.write(f":WAVeform:SOURce {channel}")
@@ -93,12 +90,22 @@ class DSOX2000:
         resp = self.comm.query(":WAVeform:XINCrement?;"
                                ":WAVeform:XORigin?;"
                                ":WAVeform:YINCrement?;"
-                               ":WAVeform:YORigin?")
+                               ":WAVeform:YORigin?;"
+                               ":ACQuire:TYPE?")
+        rln = resp.split(sep=';')
 
-        x_inc, x_0, y_inc, y_0 = [float(s) for s in resp.split(sep=';')]
+        x_inc, x_0, y_inc, y_0, acq_type = *[float(s) for s in rln[:4]], rln[4]
+
+        if acq_type.lower().startswith('peak'):
+            # In the peak detection mode, there are two y points for one time 
+            # stamp, for the min and max values.
+            x_raw_ = np.arange(len(y_raw) // 2)
+            x_raw = np.reshape(np.vstack([x_raw_, x_raw_]).T, (len(y_raw),))
+        else:
+            x_raw = np.arange(len(y_raw))
 
         # Calculates the x axis and scales the y data.
-        d["x"] = x_0 + x_inc * np.arange(len(y_raw))
+        d["x"] = x_0 + x_inc * x_raw
         d["y"] = y_0 + y_inc * y_raw
 
         return d
